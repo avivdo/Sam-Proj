@@ -10,13 +10,19 @@
 # How To Use
 #Clone this repository
 - $https://github.com/avivdo/Sam-Proj.git
-- open CMD
+- open CLI
 - run python reputation_service_stress_test.py
 - Insert requested parameters
 - Wait for results
 
 # Working Process
-* TBD
+- Getting input from the user
+- Generate urls for the server stress test based on the user's input
+- Creating threads that will run get requests over and over till timeout/keyboard interrupt(CTRL+C in Windows)
+- Starting all threads
+- Summarize result after all threads done working
+- Write two CSV files: one with all responds from the server, and the second one with the result summarize
+- print result summarize to CLI
 
 # My Test Environment
 - Windows 11
