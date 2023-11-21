@@ -8,8 +8,23 @@ from datetime import datetime
 
 # globals
 THREAD_RES_DICT = {}
-MAX_THREADS = 150
+MAX_THREADS = 250
 MAX_DOMAINS = 5000
+
+
+def beauty_wait(event: Event):
+    """
+    Beautify waiting screen while tasks are running
+    :param event: Thread-safe flag to stop the function
+    :return:
+    """
+    dots = [".  ", ".. ", "..."]
+    index = 0
+    while not event.is_set():
+        print(f"\rRunning{dots[index]}", end="")
+        index = (index + 1) % len(dots)
+        sleep(1)
+    print("\n")
 
 
 def get_valid_int_val(msg: str, min_val: int = None, max_val: int = None) -> int:
@@ -165,6 +180,7 @@ if __name__ == "__main__":
     urls = urls_generate("domains.txt", "https://reputation.gin.dev.securingsam.io/domain/ranking/")
     thread_lst = []
     thread_event = Event()
+    beauty_wait_event = Event()
     res_sum = {"stop_reason": "",
                "request_time": [],
                'fail': 0,
@@ -174,6 +190,7 @@ if __name__ == "__main__":
 
     # creating and starting threads that will run the stress function
     try:
+        thread_lst.append(Thread(target=beauty_wait, args=(beauty_wait_event,)))
         for _ in range(threads_amount):
             thrd = Thread(target=rep_service_stress, args=(thread_event, urls, timeout, url_header,))
             thread_lst.append(thrd)
@@ -191,9 +208,15 @@ if __name__ == "__main__":
 
     # ensure all threads are done working
     try:
-        for thread in thread_lst:
+        for thread in thread_lst[1:]:
             if thread.is_alive():
                 thread.join()
+    except KeyboardInterrupt:
+        pass
+    beauty_wait_event.set()
+    try:
+        if thread_lst[0].is_alive():
+            thread_lst[0].join()
     except KeyboardInterrupt:
         pass
 
