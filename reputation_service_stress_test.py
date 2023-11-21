@@ -5,6 +5,7 @@ from time import time, sleep
 from threading import Thread, Event, get_native_id
 import csv
 from datetime import datetime
+import numpy as np
 
 # globals
 THREAD_RES_DICT = {}
@@ -103,27 +104,33 @@ def rep_service_stress(event: Event, urls: str, timeout: int, header: dict):
     return
 
 
-def write_dict_to_csv(data: list, path: str):
+def write_dict_to_csv(data: (list, str), path: str, f_name: str):
     """
     Get a list of dictionaries and a path to save to CSV file in it.
     The function saves a CSV file with the data in the given path if it's exist, otherwise in current folder.
 
-    :param data: A list of dictionaries to save to a CSV file
+    :param data: A list of dictionaries OR a string to save to a CSV file
     :param path: A system location to save the CSV in
+    :param f_name: The name of the CSV file
     :return:
     """
     try:  # check if path exist, re-route to current folder if not
         if not os.path.isdir(path):
-            print("Couldn't find the given path, saving CSV file in current dir.")
-            path = ""
+            if path != "":
+                print("Couldn't find the given path, saving CSV file in current dir.")
+                path = ""
         else:
             path += "\\"
 
         # write data to csv file, keys are the column headers
-        with open(path + f"stress_test_{current_time}.csv", "w", newline="") as csv_f:
-            writer = csv.DictWriter(csv_f, fieldnames=list(data[0].keys()))
-            writer.writeheader()
-            for result in res_sum["response"]:
+        with open(path + f_name, "w", newline="") as csv_f:
+            if str(type(data[0])).split('\'')[1] == "dict":
+                writer = csv.DictWriter(csv_f, fieldnames=list(data[0].keys()))
+                writer.writeheader()
+            elif str(type(data)).split('\'')[1] == "str":
+                writer = csv.writer(csv_f, delimiter="\n")
+                data = [data.split("\n")]
+            for result in data:
                 writer.writerow(result)
     except Exception as ex:
         print(f"Failed to write CSV file\n{ex}")
@@ -236,14 +243,20 @@ if __name__ == "__main__":
         avg_time_req = -1
 
     # write all the server responses to a csv file
-    write_dict_to_csv(res_sum["response"], csv_path)
+    csv_name_response = f"stress_test_responses_{current_time}.csv"
+    write_dict_to_csv(res_sum["response"], csv_path, csv_name_response)
 
     # print summarize to console
-    print(f"Test is over!\n"
-          f"Reason: {res_sum['stop_reason']}\n"
-          f"Time in total: {int(end_time - start_time)} seconds\n"
-          f"Requests in total: {total_req_amount}\n"
-          f"Error rate: {fail_ratio}%({res_sum['fail']}/{total_req_amount})\n"
-          f"Average time for one request: {avg_time_req} {'ms' if int(1)==0 else 'seconds'}\n"
-          f"Max time for one request: {max(res_sum['request_time'])} seconds\n"
-          f"Min time for one request: {min(res_sum['request_time'])} seconds")
+    summarize = (f"Test is over!\n" 
+                 f"Reason: {res_sum['stop_reason']}\n"
+                 f"Time in total: {int(end_time - start_time)} seconds\n"
+                 f"Requests in total: {total_req_amount}\n"
+                 f"Error rate: {fail_ratio}%({res_sum['fail']}/{total_req_amount})\n"
+                 f"P90: {np.percentile(res_sum['request_time'], 90)}\n"
+                 f"Average time for one request: {avg_time_req} {'ms' if int(1)==0 else 'seconds'}\n"
+                 f"Max time for one request: {max(res_sum['request_time'])} seconds\n"
+                 f"Min time for one request: {min(res_sum['request_time'])} seconds")
+    csv_name_summarize = f"stress_test_summarize_{current_time}.csv"
+    write_dict_to_csv(summarize, csv_path, csv_name_summarize)
+    print(summarize)
+
