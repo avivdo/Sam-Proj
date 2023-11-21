@@ -10,7 +10,7 @@
 # How To Use
 #Clone this repository
 - $https://github.com/avivdo/Sam-Proj.git
-- open CMD\n
+- open CMD
 - run python reputation_service_stress_test.py
 - Insert requested parameters
 - Wait for results
