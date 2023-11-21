@@ -7,10 +7,6 @@
 - PIP
 - requests
 
-# Install request
-- open CMD
-- run "pip install requests"
-
 # How To Use
 #Clone this repository
 - $https://github.com/avivdo/Sam-Proj.git
@@ -19,8 +15,11 @@
 - Insert requested parameters
 - Wait for results
 
+# Working Process
+* TBD
+
 # My Test Environment
 - Windows 11
-- Python 3.9
+- Python 3.10
 
 
