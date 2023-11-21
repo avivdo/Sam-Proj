@@ -8,19 +8,19 @@
 - requests
 
 # Install request
-open CMD
-run "pip install requests"
+- open CMD
+- run "pip install requests"
 
 # How To Use
 #Clone this repository
-$https://github.com/avivdo/Sam-Proj.git
-open CMD\n
-run python reputation_service_stress_test.py
-Insert requested parameters
-Wait for results
+- $https://github.com/avivdo/Sam-Proj.git
+- open CMD\n
+- run python reputation_service_stress_test.py
+- Insert requested parameters
+- Wait for results
 
 # My Test Environment
-Windows 11
-Python 3.9
+- Windows 11
+- Python 3.9
 
 
