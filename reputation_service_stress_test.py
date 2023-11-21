@@ -123,7 +123,7 @@ def write_dict_to_csv(data: (list, str), path: str, f_name: str):
             path += "\\"
 
         # write data to csv file, keys are the column headers
-        with open(path + f_name, "w", newline="") as csv_f:
+        with open(os.path.join(path, f_name), "w", newline="") as csv_f:
             if str(type(data[0])).split('\'')[1] == "dict":
                 writer = csv.DictWriter(csv_f, fieldnames=list(data[0].keys()))
                 writer.writeheader()
@@ -184,7 +184,9 @@ if __name__ == "__main__":
         print("\nClosing the program due to a keyboard interrupt ")
         exit(2)
 
+    # generate URLS
     urls = urls_generate("domains.txt", "https://reputation.gin.dev.securingsam.io/domain/ranking/")
+
     thread_lst = []
     thread_event = Event()
     beauty_wait_event = Event()
