@@ -9,9 +9,9 @@
 - requests
 
 # How To Use
-#Clone this repository
-- $https://github.com/avivdo/Sam-Proj.git
+- Clone this repository: https://github.com/avivdo/Sam-Proj.git
 - open CLI
+- cd to the project folder
 - run python reputation_service_stress_test.py
 - Insert requested parameters
 - Wait for results
