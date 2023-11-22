@@ -12,7 +12,7 @@ import logging
 THREAD_RES_DICT = {}
 MAX_THREADS = 250
 MAX_DOMAINS = 5000
-CURRENT_TIME = datetime.now().strftime('%H_%M_%S')
+CURRENT_TIME = datetime.now().strftime('%d_%m_%H_%M_%S')
 logging.basicConfig(filename=f'Exception_{CURRENT_TIME}.log', encoding='utf-8', level=logging.ERROR)
 
 
