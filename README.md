@@ -1,7 +1,7 @@
 # Sam-Proj
 - Reputation server stress test home project
 - This code is running a stress test on Sam's reputation rerver, and generating a CSV file with all responses from the server.
-- In case of exceptions while tring to get responses, they will be saved in Exception_<time>.log
+- In case of exceptions while tring to get responses, they will be saved in Exception_TIME.log
 
 # Requirments
 - Python3.7+
