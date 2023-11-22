@@ -6,11 +6,14 @@ from threading import Thread, Event, get_native_id
 import csv
 from datetime import datetime
 import numpy as np
+import logging
 
 # globals
 THREAD_RES_DICT = {}
 MAX_THREADS = 250
 MAX_DOMAINS = 5000
+CURRENT_TIME = datetime.now().strftime('%H_%M_%S')
+logging.basicConfig(filename=f'Exception_{CURRENT_TIME}.log', encoding='utf-8', level=logging.ERROR)
 
 
 def beauty_wait(event: Event):
@@ -59,27 +62,28 @@ def get_valid_int_val(msg: str, min_val: int = None, max_val: int = None) -> int
     return val
 
 
-def rep_service_stress(event: Event, urls: str, timeout: int, header: dict):
+def rep_service_stress(event: Event, urls: str, timeout: int, header: dict, start: float = time()):
     """
     The function repeatedly making GET requests to a random URLs from a given list,
     and storing the returned data as a dictionary into a global dictionary.
     It will keep running until it will reach timeout or get a keyboard interrupt.
 
-    The dictionary keys: stop_reason, fail, response, request_time
+    The dictionary keys: stop_reason, fail, response, request_time, total_requests
     Global dictionary keys: ID of the thread
 
     :param event: A thread-safe flag that used here to stop a thread in case of keyboard interrupt
     :param urls: The url to run stress test on
     :param timeout: Time in seconds to stop the thread
     :param header: An authorisation header for the url
+    :param start: The time we started the threads creation (time.time())
     :return:
 
     """
-    start = time()
     res_dict = {"stop_reason": "timeout",
                 "fail": 0,
                 "response": [],
-                "request_time": []}
+                "request_time": [],
+                "total_requests": 0}
     request_time = []
     while int(time() - start) < timeout:
         try:  # sending get request, measuring the time of the request
@@ -90,9 +94,11 @@ def rep_service_stress(event: Event, urls: str, timeout: int, header: dict):
             res_dict["response"].append(answer)
             if req.status_code != 200 or "domain_error" in answer.keys():
                 res_dict["fail"] += 1
-        except Exception:
+        except Exception as ex:
+            logging.error(f"ERROR - {ex}")
             res_dict["fail"] += 1
-
+        finally:
+            res_dict["total_requests"] += 1
         if event.is_set():  # KeyboardInterrupt raised to stop the loop in the middle
             res_dict["stop_reason"] = "keyboard interrupt"
             res_dict["request_time"] = request_time
@@ -171,8 +177,6 @@ def urls_generate(domains_file: str, url_base: str):
 
 
 if __name__ == "__main__":
-    current_time = datetime.now().strftime('%H_%M_%S')
-
     # ask for input from the user
     try:
         threads_amount = get_valid_int_val(f"Enter amount of concurrent requests, max {MAX_THREADS}:", min_val=1, max_val=MAX_THREADS)
@@ -194,6 +198,7 @@ if __name__ == "__main__":
                "request_time": [],
                'fail': 0,
                "response": [],
+               "total_requests": 0
                }
     start_time = time()
 
@@ -201,7 +206,7 @@ if __name__ == "__main__":
     try:
         thread_lst.append(Thread(target=beauty_wait, args=(beauty_wait_event,)))
         for _ in range(threads_amount):
-            thrd = Thread(target=rep_service_stress, args=(thread_event, urls, timeout, url_header,))
+            thrd = Thread(target=rep_service_stress, args=(thread_event, urls, timeout, url_header, start_time,))
             thread_lst.append(thrd)
 
         for thread in thread_lst:
@@ -222,12 +227,16 @@ if __name__ == "__main__":
                 thread.join()
     except KeyboardInterrupt:
         pass
+    except Exception as ex:
+        print(f"Got an exception while waiting for threads to finish:\n{ex} ")
     beauty_wait_event.set()
     try:
         if thread_lst[0].is_alive():
             thread_lst[0].join()
     except KeyboardInterrupt:
         pass
+    except Exception as ex:
+        print(f"Got an exception while waiting for beauty_print to finish:\n{ex} ")
 
     end_time = time()
 
@@ -236,29 +245,31 @@ if __name__ == "__main__":
             res_sum["request_time"] += thread_dict["request_time"]
             res_sum["fail"] += thread_dict["fail"]
             res_sum["response"] += thread_dict["response"]
-        total_req_amount = len(res_sum['request_time'])
-        fail_ratio = (res_sum['fail']/total_req_amount)*100
-        avg_time_req = f"{sum(res_sum['request_time'])/total_req_amount:.1f}"
+            res_sum["total_requests"] += thread_dict["total_requests"]
+        # total_req_amount = len(res_sum['request_time'])
+        fail_ratio = (res_sum['fail']/res_sum["total_requests"])*100
+        avg_time_req = f"{sum(res_sum['request_time'])/res_sum['total_requests']:.1f}"
     else:  # We got no results from the threads, set default values.
-        total_req_amount = 0
+        # total_req_amount = 0
+        res_sum['request_time'] = [0]
         fail_ratio = 0
         avg_time_req = -1
 
     # write all the server responses to a csv file
-    csv_name_response = f"stress_test_responses_{current_time}.csv"
+    csv_name_response = f"stress_test_responses_{CURRENT_TIME}.csv"
     write_dict_to_csv(res_sum["response"], csv_path, csv_name_response)
 
     # print summarize to console
     summarize = (f"Test is over!\n" 
                  f"Reason: {res_sum['stop_reason']}\n"
                  f"Time in total: {int(end_time - start_time)} seconds\n"
-                 f"Requests in total: {total_req_amount}\n"
-                 f"Error rate: {fail_ratio}%({res_sum['fail']}/{total_req_amount})\n"
+                 f"Requests in total: {res_sum['total_requests']}\n"
+                 f"Error rate: {fail_ratio}%({res_sum['fail']}/{res_sum['total_requests']})\n"
                  f"P90: {np.percentile(res_sum['request_time'], 90)}\n"
                  f"Average time for one request: {avg_time_req} {'ms' if int(1)==0 else 'seconds'}\n"
                  f"Max time for one request: {max(res_sum['request_time'])} seconds\n"
                  f"Min time for one request: {min(res_sum['request_time'])} seconds")
-    csv_name_summarize = f"stress_test_summarize_{current_time}.csv"
+    csv_name_summarize = f"stress_test_summarize_{CURRENT_TIME}.csv"
     write_dict_to_csv(summarize, csv_path, csv_name_summarize)
     print(summarize)
 
