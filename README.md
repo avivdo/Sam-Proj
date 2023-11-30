@@ -4,7 +4,7 @@
 - In case of exceptions while tring to get responses, they will be saved in Exception_TIME.log
 
 # Requirments
-- Python3.7+
+- Python3.9+
 - PIP
 - requests
 
